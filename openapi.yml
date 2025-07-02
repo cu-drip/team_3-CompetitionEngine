@@ -1,4 +1,4 @@
-openapi: 3.0.4
+openapi: 3.1.0
 info:
   title: CompetitionEngine API
   version: '0.1.0'
@@ -7,9 +7,15 @@ info:
 servers:
   - url: https://api.server.test/v1
     description: Engine server
+
+security:
+  - UserIdHeader: []
+    UserPwdHashHeader: []
+
 tags:
   - name: Engine
     description: Interaction with CompetitionEngine
+
 paths:
   /distribute/{tourId}:
     post:
@@ -26,6 +32,10 @@ paths:
       responses:
         '204':
           description: Tournament table created for tour (name = id)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '422':
           description: Incorrect tour status
           content:
@@ -48,6 +58,10 @@ paths:
       responses:
         '204':
           description: Match started
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '422':
           description: Incorrect match status
           content:
@@ -74,6 +88,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MatchStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Match not found
 
@@ -99,6 +117,10 @@ paths:
       responses:
         '204':
           description: Points added
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '422':
           description: Match not active or wrong parameters
           content:
@@ -128,6 +150,10 @@ paths:
       responses:
         '204':
           description: Points removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '422':
           description: Match not active, resulting score negative, or wrong parameters
           content:
@@ -157,6 +183,10 @@ paths:
       responses:
         '204':
           description: Winner set
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '422':
           description: Match not finished yet, wrong team ID, or other invalid state
           content:
@@ -164,9 +194,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReasonError'
 
-
 components:
+  securitySchemes:
+    UserIdHeader:
+      type: apiKey
+      in: header
+      name: X-User-UUID
+      description: >
+        RFC‑4122 UUID пользователя. Пример: 123e4567-e89b-12d3-a456-426614174000
+      x-example: 123e4567-e89b-12d3-a456-426614174000
+      x-pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      x-minLength: 36
+
+    UserPwdHashHeader:
+      type: apiKey
+      in: header
+      name: X-User-Hash
+      description: >
+        bcrypt‑hash (cost=10) от пароля + соль. Пример сокращён.
+      x-example: "$2b$10$7qGwYnbDOMqSdWwaZ7kz1Oppz92O1dW8r8hUWNu4DwSUjWBo9.TX2"
+      x-minLength: 32
+      x-maxLength: 128
+
   responses:
+    Unauthorized:
+      description: Invalid or missing authentication headers (X-User-UUID / X-User-Hash)
+    Forbidden:
+      description: Authenticated but lacking permissions to perform this action
     NotFound:
       description: Resource not found
   schemas:
