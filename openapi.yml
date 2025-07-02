@@ -1,0 +1,203 @@
+openapi: 3.0.4
+info:
+  title: CompetitionEngine API
+  version: '0.1.0'
+  description: >
+    REST API for managing tournaments, teams and participants.
+servers:
+  - url: https://api.server.test/v1
+    description: Engine server
+tags:
+  - name: Engine
+    description: Interaction with CompetitionEngine
+paths:
+  /distribute/{tourId}:
+    post:
+      summary: Distribute teams for matches
+      tags: [Engine]
+      parameters:
+        - name: tourId
+          in: path
+          description: ID of tour
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tournament table created for tour (name = id)
+        '422':
+          description: Incorrect tour status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasonError'
+
+  /start_match/{matchId}:
+    post:
+      summary: Start match in tour between teams
+      tags: [Engine]
+      parameters:
+        - name: matchId
+          in: path
+          description: ID of match
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Match started
+        '422':
+          description: Incorrect match status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasonError'
+
+  /get_match_status/{matchId}:
+    get:
+      summary: Get current match status
+      tags: [Engine]
+      parameters:
+        - name: matchId
+          in: path
+          description: ID of match
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current match status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchStatus'
+        '404':
+          description: Match not found
+
+  /add_points/{matchId}/{n}:
+    post:
+      summary: Add N points to the active team of the specified match
+      tags: [Engine]
+      parameters:
+        - name: matchId
+          in: path
+          description: ID of match
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: n
+          in: path
+          description: Number of points to add (positive integer)
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '204':
+          description: Points added
+        '422':
+          description: Match not active or wrong parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasonError'
+
+  /remove_points/{matchId}/{n}:
+    post:
+      summary: Remove N points from the active team of the specified match
+      tags: [Engine]
+      parameters:
+        - name: matchId
+          in: path
+          description: ID of match
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: n
+          in: path
+          description: Number of points to remove (positive integer)
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '204':
+          description: Points removed
+        '422':
+          description: Match not active, resulting score negative, or wrong parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasonError'
+
+  /set_winner/{matchId}/{participantId}:
+    post:
+      summary: Set winner for the specified match
+      tags: [Engine]
+      parameters:
+        - name: matchId
+          in: path
+          description: ID of match
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: participantId
+          in: path
+          description: ID of the winning command (team)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Winner set
+        '422':
+          description: Match not finished yet, wrong team ID, or other invalid state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasonError'
+
+
+components:
+  responses:
+    NotFound:
+      description: Resource not found
+  schemas:
+    ReasonError:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+    MatchStatus:
+      type: object
+      required: [started_at, participant1, participant2, p1_points, p2_points]
+      properties:
+        started_at:
+          type: string
+          format: date-time
+        participant1:
+          type: string
+          format: uuid
+        participant2:
+          type: string
+          format: uuid
+        p1_points:
+          type: integer
+        p2_points:
+          type: integer
+        winner:
+          type: string
+          format: uuid
+          nullable: true
+    UUID:
+      type: string
+      format: uuid
+      description: Universally unique identifier
