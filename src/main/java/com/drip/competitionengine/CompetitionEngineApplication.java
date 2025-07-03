@@ -1,4 +1,4 @@
-package com.drip.CompetitionEngine;
+package com.drip.competitionengine;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

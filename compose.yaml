@@ -1,9 +1,45 @@
+version: "3.9"
+
 services:
-  postgres:
-    image: 'postgres:latest'
+#  postgres:
+#    image: postgres:16-alpine
+#    container_name: teams-db
+#    restart: unless-stopped
+#
+#    ports:
+#      - "5432:5432"
+#
+#    # ► суперпользователь (будет создан контейнером)
+#    environment:
+#      POSTGRES_DB: teams
+#      POSTGRES_USER: pgroot
+#      POSTGRES_PASSWORD: pgrootpwd
+#
+#    volumes:
+#      - pg_data:/var/lib/postgresql/data
+#
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U pgroot -d teams"]
+#      interval: 10s
+#      retries: 5
+
+  engine:
+    build: ../engine
+    container_name: competition-engine
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # ► Datasource для Spring
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      SPRING_DATASOURCE_URL:      jdbc:postgresql://postgres:5432/sport
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+
     ports:
-      - '5432'
+      - "8082:8080"     # наружу только REST-API
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      retries: 5

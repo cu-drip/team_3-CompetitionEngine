@@ -30,8 +30,8 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
-          description: Tournament table created for tour (name = id)
+        "204":
+          description: OK
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -56,8 +56,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
-          description: Match started
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MatchStatusDto"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -82,12 +86,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
-          description: Current match status
+        "200":
+          description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: '#/components/schemas/MatchStatus'
+                $ref: "#/components/schemas/MatchStatusDto"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -95,7 +99,7 @@ paths:
         '404':
           description: Match not found
 
-  /add_points/{matchId}/{n}:
+  /add_points/{matchId}/{participantId}/{n}:
     post:
       summary: Add N points to the active team of the specified match
       tags: [Engine]
@@ -103,6 +107,13 @@ paths:
         - name: matchId
           in: path
           description: ID of match
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: participantId
+          in: path
+          description: ID of the winning command (team)
           required: true
           schema:
             type: string
@@ -115,8 +126,12 @@ paths:
             type: integer
             minimum: 1
       responses:
-        '204':
-          description: Points added
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ScoreDto"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -128,7 +143,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReasonError'
 
-  /remove_points/{matchId}/{n}:
+  /remove_points/{matchId}/{participantId}/{n}:
     post:
       summary: Remove N points from the active team of the specified match
       tags: [Engine]
@@ -136,6 +151,13 @@ paths:
         - name: matchId
           in: path
           description: ID of match
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: participantId
+          in: path
+          description: ID of the winning command (team)
           required: true
           schema:
             type: string
@@ -148,8 +170,12 @@ paths:
             type: integer
             minimum: 1
       responses:
-        '204':
-          description: Points removed
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ScoreDto"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -182,7 +208,7 @@ paths:
             format: uuid
       responses:
         '204':
-          description: Winner set
+          description: OK
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -224,6 +250,39 @@ components:
     NotFound:
       description: Resource not found
   schemas:
+    MatchStatusDto:
+      type: object
+      properties:
+        startedAt:
+          type: string
+          format: date-time
+        participant1:
+          type: string
+          format: uuid
+        participant2:
+          type: string
+          format: uuid
+        p1Points:
+          type: integer
+          format: int32
+        p2Points:
+          type: integer
+          format: int32
+        winner:
+          type: string
+          format: uuid
+    ScoreDto:
+      type: object
+      properties:
+        matchId:
+          type: string
+          format: uuid
+        participantId:
+          type: string
+          format: uuid
+        points:
+          type: integer
+          format: int32
     ReasonError:
       type: object
       required: [reason]
