@@ -10,8 +10,8 @@ servers:
     variables:
       version:
         descriptions: API version
-        default: v1
-        enum: [v1]
+        default: v2
+        enum: [v1, v2]
 security:
   - UserIdHeader: []
     UserPwdHashHeader: []

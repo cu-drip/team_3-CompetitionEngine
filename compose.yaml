@@ -1,4 +1,6 @@
-version: "3.9"
+secrets:
+  jwt_secret:
+    file: ../secrets/jwt_secret.key
 
 services:
   enginedb:
@@ -17,11 +19,11 @@ services:
       - sports-network
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d engine" ]
-      interval: 10s
+      interval: 1s
       retries: 5
 
   competition-engine:
-    build: team_3-CompetitionEngine
+    build: .
     container_name: competition-engine
     restart: on-failure
     depends_on:
@@ -31,10 +33,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://enginedb:5432/engine
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET_PATH: /run/secrets/jwt_secret
     ports:
       - "8080:8080"
     networks:
       - sports-network
+    secrets:
+      - jwt_secret
 
 volumes:
   engine_data:

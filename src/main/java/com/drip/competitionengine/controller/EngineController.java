@@ -6,6 +6,7 @@ import com.drip.competitionengine.service.MatchService;
 import com.drip.competitionengine.service.TournamentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,8 +22,9 @@ public class EngineController {
     /* ---------- MATCH MANAGEMENT ---------- */
 
     @GetMapping("/matches")
-    public List<MatchDTO> getAllMatches() {
-        return matchService.getAllMatches();
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<String> getAllMatches() {
+        return List.of("aboba", "aboba2");
     }
 
     @PostMapping("/matches")
