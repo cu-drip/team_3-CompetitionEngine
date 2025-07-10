@@ -13,10 +13,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.UUID;
 
-/**
- * Simple header‑based auth: validates presence & format of X‑User‑UUID / X‑User‑Hash.
- * (No real password check – assumes upstream gateway already did it.)
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j

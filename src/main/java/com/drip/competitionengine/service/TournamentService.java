@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class TournamentService {
       if (accepted.size() < 2) throw new IllegalStateException("Not enough participants");
 
       // simplistic: first two become a match
-      Match m = new Match(UUID.randomUUID(), tourId, null, Instant.now(), 1,
+      Match m = new Match(UUID.randomUUID(), tourId, null, LocalDateTime.now(), 1,
               accepted.get(0).getId().getParticipantId(),
               accepted.get(1).getId().getParticipantId(), 0,0,null);
       matchRepo.save(m);

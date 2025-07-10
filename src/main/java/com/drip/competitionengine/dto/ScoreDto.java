@@ -1,5 +1,5 @@
 // api/dto/ScoreDto.java
-package com.drip.competitionengine.api;
+package com.drip.competitionengine.dto;
 
 import java.util.UUID;
 
