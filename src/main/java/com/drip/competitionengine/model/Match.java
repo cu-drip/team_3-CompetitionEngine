@@ -2,20 +2,28 @@ package com.drip.competitionengine.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 
-@Entity @Table(name="matches")
-@Data @NoArgsConstructor @AllArgsConstructor
+@Entity
+@Table(name = "matches")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Match {
-  @Id @Column(name="match_id")
+  @Id
+  @Column(name = "match_id")
   UUID id;
   @Column(name = "tour_id")
   UUID tourId;
   @Column(name = "started_at")
-  Instant startedAt;
+  LocalDateTime startedAt;
+  @CreationTimestamp
   @Column(name = "created_at")
-  Instant createdAt;
+  LocalDateTime createdAt;
   @Column(name = "position")
   Integer position;
   @Column(name = "partition1_id")
@@ -28,12 +36,13 @@ public class Match {
   Integer partition2Points;
   @Column(name = "winner_id")
   UUID winnerId;
+
   /**
    * Устанавливает очки для указанной партии и возвращает новое значение.
    *
    * @param partitionId идентификатор partition1 или partition2
    * @param points      сколько очков назначить
-   * @return            новое значение очков для этой партии
+   * @return новое значение очков для этой партии
    * @throws IllegalArgumentException если partitionId не совпадает ни с одной из партий
    */
   public int setPartitionPointsById(UUID partitionId, int points) {
@@ -57,7 +66,7 @@ public class Match {
    * Возвращает текущее количество очков для указанной партии.
    *
    * @param partitionId идентификатор partition1 или partition2
-   * @return            очки соответствующей партии (может быть null, если ещё не выставлены)
+   * @return очки соответствующей партии (может быть null, если ещё не выставлены)
    * @throws IllegalArgumentException если partitionId не совпадает ни с одной из партий
    */
   public Integer getPartitionPointsById(UUID partitionId) {
@@ -75,5 +84,7 @@ public class Match {
     }
   }
 
-  public boolean isActive() { return startedAt!=null && winnerId==null; }
+  public boolean isActive() {
+    return startedAt != null && winnerId == null;
+  }
 }

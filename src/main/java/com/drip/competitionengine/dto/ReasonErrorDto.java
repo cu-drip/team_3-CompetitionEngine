@@ -1,6 +1,4 @@
-package com.drip.competitionengine.api.dto;
-import java.time.Instant;
-import java.util.UUID;
+package com.drip.competitionengine.dto;
 import lombok.*;
 
 @Data @AllArgsConstructor @NoArgsConstructor

@@ -1,45 +1,44 @@
 version: "3.9"
 
 services:
-#  postgres:
-#    image: postgres:16-alpine
-#    container_name: teams-db
-#    restart: unless-stopped
-#
-#    ports:
-#      - "5432:5432"
-#
-#    # ► суперпользователь (будет создан контейнером)
-#    environment:
-#      POSTGRES_DB: teams
-#      POSTGRES_USER: pgroot
-#      POSTGRES_PASSWORD: pgrootpwd
-#
-#    volumes:
-#      - pg_data:/var/lib/postgresql/data
-#
-#    healthcheck:
-#      test: ["CMD-SHELL", "pg_isready -U pgroot -d teams"]
-#      interval: 10s
-#      retries: 5
-
-  engine:
-    build: ../engine
-    container_name: competition-engine
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-    # ► Datasource для Spring
+  enginedb:
+    image: postgres:16-alpine
+    container_name: engine-postgres
+    restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL:      jdbc:postgresql://postgres:5432/sport
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-
+      POSTGRES_DB: engine
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
-      - "8082:8080"     # наружу только REST-API
-
+      - "5397:5432"
+    volumes:
+      - engine_data:/var/lib/postgresql/data
+    networks:
+      - sports-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d engine" ]
+      interval: 10s
       retries: 5
+
+  competition-engine:
+    build: team_3-CompetitionEngine
+    container_name: competition-engine
+    restart: on-failure
+    depends_on:
+      enginedb:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://enginedb:5432/engine
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - sports-network
+
+volumes:
+  engine_data:
+
+networks:
+  sports-network:
+    driver: bridge

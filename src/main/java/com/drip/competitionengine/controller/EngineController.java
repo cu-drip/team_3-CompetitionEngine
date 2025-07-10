@@ -1,22 +1,56 @@
-package com.drip.competitionengine.api;
+package com.drip.competitionengine.controller;
 
-import com.drip.competitionengine.api.dto.MatchStatusDto;
-import com.drip.competitionengine.model.Match;
+import com.drip.competitionengine.dto.MatchDTO;
+import com.drip.competitionengine.dto.ScoreDto;
 import com.drip.competitionengine.service.MatchService;
 import com.drip.competitionengine.service.TournamentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class EngineController {
     private final TournamentService tourService;
-    private final MatchService      matchService;
+    private final MatchService matchService;
+
+    /* ---------- MATCH MANAGEMENT ---------- */
+
+    @GetMapping("/matches")
+    public List<MatchDTO> getAllMatches() {
+        return matchService.getAllMatches();
+    }
+
+    @PostMapping("/matches")
+    public MatchDTO getMatchById(@RequestBody MatchDTO dto) {
+        return matchService.createMatch(dto);
+    }
+
+
+    @GetMapping("/matches/{id}")
+    public MatchDTO getTournamentById(@PathVariable UUID id) {
+        return matchService.getMatchById(id);
+    }
+
+    @PutMapping("/matches/{id}")
+    public MatchDTO updateTournament(@PathVariable UUID id, @RequestBody MatchDTO dto) {
+        return matchService.updateMatch(id, dto);
+    }
+
+    @PatchMapping("/matches/{id}")
+    public MatchDTO partialUpdateTournament(@PathVariable UUID id, @RequestBody MatchDTO dto) {
+        return matchService.partiallyUpdateMatch(id, dto);
+    }
+
+    @DeleteMapping("/matches/{id}")
+    public ResponseEntity<Void> deleteTournament(@PathVariable UUID id) {
+        matchService.deleteMatch(id);
+        return ResponseEntity.noContent().build();
+    }
 
     /* ---------- TOURNAMENT ---------- */
 
@@ -29,14 +63,14 @@ public class EngineController {
     /* ---------- MATCH LIFECYCLE ---------- */
 
     @PostMapping("/start_match/{matchId}")
-    public ResponseEntity<MatchStatusDto> startMatch(@PathVariable UUID matchId) {
+    public ResponseEntity<String> startMatch(@PathVariable UUID matchId) {
         matchService.startMatch(matchId);
-        return ResponseEntity.ok(toDto(matchService.getStatus(matchId))); // 200 + статус
+        return ResponseEntity.ok("Started"); // 200
     }
 
     @GetMapping("/get_match_status/{matchId}")
-    public MatchStatusDto getStatus(@PathVariable UUID matchId) {        // 200
-        return toDto(matchService.getStatus(matchId));
+    public MatchDTO getStatus(@PathVariable UUID matchId) {        // 200
+        return new MatchDTO();
     }
 
     /* ---------- SCORE OPS ---------- */
@@ -62,14 +96,5 @@ public class EngineController {
                                           @PathVariable UUID participantId) {
         matchService.setWinner(matchId, participantId);
         return ResponseEntity.noContent().build();           // 204
-    }
-
-    /* ---------- helper ---------- */
-    private static MatchStatusDto toDto(Match m){
-        return new MatchStatusDto(
-                m.getStartedAt(),
-                m.getPartition1Id(), m.getPartition2Id(),
-                m.getPartition1Points(), m.getPartition2Points(),
-                m.getWinnerId());
     }
 }
