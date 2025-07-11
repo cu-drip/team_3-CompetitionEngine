@@ -3,318 +3,457 @@ info:
   title: CompetitionEngine API
   version: '0.1.0'
   description: >
-    REST API for managing tournaments, teams and participants.
+    REST API для управления турнирами, командами и участниками.
 servers:
-  - url: https://api.server.test/v1
+  - url: https://api.server.test/{version}
     description: Engine server
     variables:
       version:
-        descriptions: API version
-        default: v2
-        enum: [v1, v2]
+        description: API version
+        default: v1
+        enum: [v1]
+
 security:
-  - UserIdHeader: []
-    UserPwdHashHeader: []
+  - bearerAuth: []
 
 tags:
   - name: Engine
     description: Interaction with CompetitionEngine
 
 paths:
-  /distribute/{tourId}:
+  ############################################################
+  #  TOURNAMENTS
+  ############################################################
+  /tour:
     post:
-      summary: Distribute teams for matches
-      tags: [Engine]
-      parameters:
-        - name: tourId
-          in: path
-          description: ID of tour
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Create a new tournament
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Tour' }
       responses:
-        "204":
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          description: Incorrect tour status
+        '201':
+          description: Tournament created
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ReasonError'
+              schema: { $ref: '#/components/schemas/Tour' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
-  /start_match/{matchId}:
-    post:
-      summary: Start match in tour between teams
-      tags: [Engine]
-      parameters:
-        - name: matchId
-          in: path
-          description: ID of match
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/MatchStatusDto"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          description: Incorrect match status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReasonError'
-
-  /get_match_status/{matchId}:
+  /tour/{tourId}:
+    parameters:
+      - $ref: '#/components/parameters/TourId'
     get:
-      summary: Get current match status
-      tags: [Engine]
-      parameters:
-        - name: matchId
-          in: path
-          description: ID of match
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Get tournament by ID
+      security: [ { bearerAuth: [] } ]
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Tournament data
           content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/MatchStatusDto"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Match not found
+            application/json:
+              schema: { $ref: '#/components/schemas/Tour' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Replace tournament by ID
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Tour' }
+      responses:
+        '200':
+          description: Tournament updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tour' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      summary: Delete tournament by ID
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '204': { description: Tournament deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
-  /add_points/{matchId}/{participantId}/{n}:
-    post:
-      summary: Add N points to the active team of the specified match
-      tags: [Engine]
-      parameters:
-        - name: matchId
-          in: path
-          description: ID of match
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: participantId
-          in: path
-          description: ID of the winning command (team)
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: n
-          in: path
-          description: Number of points to add (positive integer)
-          required: true
-          schema:
-            type: integer
-            minimum: 1
+  ############################################################
+  #  BRACKETS (one-per-tournament)
+  ############################################################
+  /bracket/{tourId}:
+    parameters:
+      - $ref: '#/components/parameters/TourId'
+    get:
+      summary: Get bracket for tournament
+      security: [ { bearerAuth: [] } ]
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Bracket data
           content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ScoreDto"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          description: Match not active or wrong parameters
+            application/json:
+              schema: { $ref: '#/components/schemas/Bracket' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Update bracket for tournament
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Bracket' }
+      responses:
+        '200':
+          description: Bracket updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Bracket' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  ############################################################
+  #  MATCHES  —  nested under tournament for mutations
+  ############################################################
+  /tour/{tourId}/matches:
+    parameters:
+      - $ref: '#/components/parameters/TourId'
+    get:
+      summary: List matches of a tournament
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Array of matches
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReasonError'
-
-  /remove_points/{matchId}/{participantId}/{n}:
+                type: array
+                items: { $ref: '#/components/schemas/Match' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     post:
-      summary: Remove N points from the active team of the specified match
-      tags: [Engine]
-      parameters:
-        - name: matchId
-          in: path
-          description: ID of match
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: participantId
-          in: path
-          description: ID of the winning command (team)
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: n
-          in: path
-          description: Number of points to remove (positive integer)
-          required: true
-          schema:
-            type: integer
-            minimum: 1
+      summary: Create a new match inside a tournament
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Match' }
       responses:
-        "200":
-          description: OK
+        '201':
+          description: Match created
           content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ScoreDto"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          description: Match not active, resulting score negative, or wrong parameters
+            application/json:
+              schema: { $ref: '#/components/schemas/Match' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /tour/{tourId}/matches/{matchId}:
+    parameters:
+      - $ref: '#/components/parameters/TourId'
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      summary: Get match by ID inside a tournament
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Match data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Match' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Replace match by ID inside a tournament
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Match' }
+      responses:
+        '200':
+          description: Match replaced
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Match' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Update match by ID inside a tournament
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Match' }
+      responses:
+        '200':
+          description: Match updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Match' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      summary: Delete match by ID inside a tournament
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '204': { description: Match deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  ############################################################
+  #  GLOBAL READ-ONLY ACCESS TO A MATCH BY ID
+  ############################################################
+  /matches/{matchId}:
+    parameters:
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      summary: Get match by ID (read-only, no tournament context required)
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Match data (includes canonical URL)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReasonError'
-
-  /set_winner/{matchId}/{participantId}:
-    post:
-      summary: Set winner for the specified match
-      tags: [Engine]
-      parameters:
-        - name: matchId
-          in: path
-          description: ID of match
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: participantId
-          in: path
-          description: ID of the winning command (team)
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          description: Match not finished yet, wrong team ID, or other invalid state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReasonError'
+                allOf:
+                  - $ref: '#/components/schemas/Match'
+                  - type: object
+                    properties:
+                      canonical:
+                        type: string
+                        description: Canonical URL under /tour/{tourId}/matches/{matchId}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
 components:
+
+  #######  Security schemes  #######
   securitySchemes:
-    UserIdHeader:
-      type: apiKey
-      in: header
-      name: X-User-UUID
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
       description: >
-        RFC‑4122 UUID пользователя. Пример: 123e4567-e89b-12d3-a456-426614174000
-      x-example: 123e4567-e89b-12d3-a456-426614174000
-      x-pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-      x-minLength: 36
+        Use a Bearer token containing a valid JWT.  
 
-    UserPwdHashHeader:
-      type: apiKey
-      in: header
-      name: X-User-Hash
-      description: >
-        bcrypt‑hash (cost=10) от пароля + соль. Пример сокращён.
-      x-example: "$2b$10$7qGwYnbDOMqSdWwaZ7kz1Oppz92O1dW8r8hUWNu4DwSUjWBo9.TX2"
-      x-minLength: 32
-      x-maxLength: 128
+  #######  Reusable parameters  #######
+  parameters:
+    TourId:
+      name: tourId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID of the tournament
+    MatchId:
+      name: matchId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID of the match
 
+  #######  Standard responses  #######
   responses:
     Unauthorized:
-      description: Invalid or missing authentication headers (X-User-UUID / X-User-Hash)
+      description: Invalid or missing JWT bearer token
     Forbidden:
-      description: Authenticated but lacking permissions to perform this action
+      description: Authenticated but lacking `ROLE_ADMIN` authority
     NotFound:
       description: Resource not found
+
+  #######  Schemas  #######
   schemas:
-    MatchStatusDto:
+
+    Tour:
       type: object
+      description: Схема объекта «Турнир»
+      required:
+        [ startTime, sport, id, typeTournament, typeGroup,
+          matchesNumber, createdAt, maxParticipants,
+          place, organizerId, participants ]
       properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор турнира
+        startTime:
+          type: string
+          format: date-time
+          description: Время начала турнира (ISO 8601)
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время создания записи
+        sport:
+          type: string
+          enum: [football, basketball, tennis, boxing, chess, jiujitsu]
+          description: Вид спорта
+        typeTournament:
+          type: string
+          enum: [solo, team]
+          description: Формат турнира
+        typeGroup:
+          type: string
+          enum: [olympic, swiss, round_robin]
+          description: Тип распределения
+        matchesNumber:
+          type: integer
+          minimum: 1
+          description: Общее число матчей
+        maxParticipants:
+          type: integer
+          minimum: 1
+          description: Максимальное число участников
+        place:
+          type: string
+          description: Место проведения
+        organizerId:
+          type: string
+          format: uuid
+          description: Идентификатор организатора
+        participants:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Список идентификаторов участников
+
+    Match:
+      type: object
+      description: Схема объекта «Матч»
+      required:
+        [ id, plannedStartTime, plannedEndTime,
+          participants, winner, status, parentMatches ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор матча
+        plannedStartTime:
+          type: string
+          format: date-time
+          description: Запланированное время начала
+        plannedEndTime:
+          type: string
+          format: date-time
+          description: Запланированное время окончания
         startedAt:
           type: string
           format: date-time
-        participant1:
+          nullable: true
+          description: Фактическое время начала
+        finishedAt:
           type: string
-          format: uuid
-        participant2:
-          type: string
-          format: uuid
-        p1Points:
-          type: integer
-          format: int32
-        p2Points:
-          type: integer
-          format: int32
+          format: date-time
+          nullable: true
+          description: Фактическое время окончания
+        participants:
+          type: array
+          description: Статистика каждого участника
+          items:
+            $ref: '#/components/schemas/MatchParticipant'
         winner:
           type: string
           format: uuid
-    ScoreDto:
+          description: Идентификатор победителя
+        status:
+          type: string
+          enum: [prepared, ongoing, finished]
+          description: Текущий статус матча
+        parentMatches:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Ссылки на родительские матчи
+
+    Bracket:
       type: object
+      description: Турнирная сетка (bracket)
+      required: [typeTournament, typeGroup, matches]
       properties:
-        matchId:
+        typeTournament:
+          type: string
+          enum: [INDIVIDUAL, TEAM]
+          description: Формат турнира
+        typeGroup:
+          type: string
+          enum: [OLYMPIC, GROUP_STAGE, KNOCKOUT]
+          description: Тип сетки
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/Match'
+          description: Список матчей в сетке
+
+    MatchParticipant:
+      type: object
+      description: Статистика одного участника в матче
+      required: [id]
+      properties:
+        id:
           type: string
           format: uuid
-        participantId:
-          type: string
-          format: uuid
-        points:
+          description: Идентификатор участника
+        score:
           type: integer
-          format: int32
+          minimum: 0
+          nullable: true
+          description: Очки/голы
+        redCards:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Количество красных карточек
+        yellowCards:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Количество жёлтых карточек
+        assists:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Передачи
+        fouls:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Фолы
+        sets:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Выигранные сеты
+        knockdowns:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Нокдауны
+
     ReasonError:
       type: object
       required: [reason]
       properties:
         reason:
           type: string
-    MatchStatus:
-      type: object
-      required: [started_at, participant1, participant2, p1_points, p2_points]
-      properties:
-        started_at:
-          type: string
-          format: date-time
-        participant1:
-          type: string
-          format: uuid
-        participant2:
-          type: string
-          format: uuid
-        p1_points:
-          type: integer
-        p2_points:
-          type: integer
-        winner:
-          type: string
-          format: uuid
-          nullable: true
-    UUID:
-      type: string
-      format: uuid
-      description: Universally unique identifier
