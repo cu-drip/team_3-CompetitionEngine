@@ -1,6 +1,7 @@
 // src/main/java/com/drip/competitionengine/dto/MatchParticipantDto.java
 package com.drip.competitionengine.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,6 +13,17 @@ import java.util.UUID;
  */
 @Getter @Setter
 public class MatchParticipantDto {
+
+    @JsonIgnore                 // не сериализовать в JSON
+    public boolean hasStats() {
+        return score       != null ||
+                redCards    != null ||
+                yellowCards != null ||
+                assists     != null ||
+                fouls       != null ||
+                sets        != null ||
+                knockdowns  != null;
+    }
 
     private UUID id;
     private Integer score;

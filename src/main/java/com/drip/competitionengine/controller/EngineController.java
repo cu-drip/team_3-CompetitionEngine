@@ -16,10 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Контроллер, на 100 % отражающий OpenAPI-контракт.
- * Базовый префикс – /api/v1 (см. servers[].url в YAML).
- */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

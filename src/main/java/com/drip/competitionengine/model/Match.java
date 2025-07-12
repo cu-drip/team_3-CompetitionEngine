@@ -60,5 +60,21 @@ public class Match {
     public void addParticipant(UUID pid) {
         participants.add(new MatchParticipant(pid));
     }
+
+    /** Любое изменение полей → матч считается идущим. */
+    public void touchOngoing() {
+        if (status == MatchStatus.PREPARED) {
+            status = MatchStatus.ONGOING;
+            if (startedAt == null) startedAt = Instant.now();
+        }
+    }
+
+    /** Фиксация победителя + финиша */
+    public void finish(UUID winnerId) {
+        this.winner     = winnerId;
+        this.status     = MatchStatus.FINISHED;
+        this.finishedAt = Instant.now();
+        if (startedAt == null) startedAt = finishedAt; // страховка
+    }
 }
 

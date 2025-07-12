@@ -1,8 +1,11 @@
 package com.drip.competitionengine.service;
 
 import com.drip.competitionengine.dto.MatchDtoOut;
+import com.drip.competitionengine.dto.MatchParticipantDto;
 import com.drip.competitionengine.mapper.MatchMapper;
 import com.drip.competitionengine.model.Match;
+import com.drip.competitionengine.model.MatchParticipant;
+import com.drip.competitionengine.model.MatchStatus;
 import com.drip.competitionengine.model.Tournament;
 import com.drip.competitionengine.repo.MatchRepository;
 import com.drip.competitionengine.repo.TournamentRepository;
@@ -74,14 +77,111 @@ public class MatchService {
         return mapper.toDto(matchRepo.save(entity));
     }
 
+
+
     /* ------------------------------------------------------------------
      * 5.  Частичное обновление (PATCH)
      * ------------------------------------------------------------------ */
     @Transactional
-    public MatchDtoOut patch(UUID tourId, UUID matchId, MatchDtoOut body) {
+    public MatchDtoOut patch(UUID tourId, UUID matchId, MatchDtoOut dto) {
+
         Match entity = getInTournamentEntity(tourId, matchId);
-        mapper.patch(entity, body);                      // @MappingTarget patch-метод
-        return mapper.toDto(matchRepo.save(entity));
+
+        /* ------------ 0. фиксируем старое состояние ------------ */
+
+        MatchStatus oldStatus  = entity.getStatus();
+        UUID        oldWinner  = entity.getWinner();
+
+
+        /* ─── 1. обычные поля ─── */
+        mapper.patch(entity, dto);               // null-ы игнорируются
+
+        /* ─── 2. участники: point-merge по ID ─── */
+        if (dto.getParticipants() != null) {
+            for (MatchParticipantDto pDto : dto.getParticipants()) {
+
+                MatchParticipant pEnt = entity.getParticipants().stream()
+                        .filter(p -> p.getId().equals(pDto.getId()))
+                        .findFirst()
+                        .orElseGet(() -> {                    // если в списке не было
+                            MatchParticipant np = new MatchParticipant(pDto.getId());
+                            entity.getParticipants().add(np);
+                            return np;
+                        });
+
+                // обновляем только непустые поля
+                if (pDto.getScore()       != null) pEnt.setScore(pDto.getScore());
+                if (pDto.getRedCards()    != null) pEnt.setRedCards(pDto.getRedCards());
+                if (pDto.getYellowCards() != null) pEnt.setYellowCards(pDto.getYellowCards());
+                if (pDto.getAssists()     != null) pEnt.setAssists(pDto.getAssists());
+                if (pDto.getFouls()       != null) pEnt.setFouls(pDto.getFouls());
+                if (pDto.getSets()        != null) pEnt.setSets(pDto.getSets());
+                if (pDto.getKnockdowns()  != null) pEnt.setKnockdowns(pDto.getKnockdowns());
+            }
+        }
+        /* ------------ 3. логика статуса / winner --------------- */
+        MatchStatus newStatus = entity.getStatus();
+        UUID        newWinner = entity.getWinner();
+
+        // 3-а. статус явно прислали
+        if (dto.getStatus() != null) {
+
+            switch (newStatus) {
+                case PREPARED -> {
+                    entity.setStartedAt(null);
+                    entity.setFinishedAt(null);
+                    entity.setWinner(null);
+                }
+                case ONGOING -> {
+                    entity.setWinner(null);
+                    entity.touchOngoing();
+                    entity.setFinishedAt(null);
+                }
+                case FINISHED -> {
+                    // здесь winner должен быть, но оставим проверку ниже
+                }
+            }
+        }
+
+        // 3-б. winner обнулили вручную
+        if (oldWinner != null && newWinner == null) {
+            entity.setFinishedAt(null);
+            entity.setStatus(MatchStatus.ONGOING);
+            newStatus = MatchStatus.ONGOING;
+        }
+
+        // 3-в. winner поставили / изменили
+        if (newWinner != null && !newWinner.equals(oldWinner)) {
+            entity.finish(newWinner);        // ставит FINISHED + finishedAt
+            propagateWinner(entity);
+            newStatus = MatchStatus.FINISHED;
+        }
+
+        /* ------------ 4. авто-ONGOING при «боевых» изменениях --- */
+        boolean statsChanged = dto.getParticipants() != null;
+        boolean statusForced = dto.getStatus() != null;
+
+        if (!statusForced && statsChanged && newStatus == MatchStatus.PREPARED) {
+            entity.touchOngoing();           // ставит ONGOING + startedAt (если пуст)
+        }
+
+        return mapper.toDto(entity);         // flush на выходе @Transactional
+    }
+
+
+    private void propagateWinner(Match finished) {
+
+        List<Match> children = matchRepo.findChildren(
+                finished.getTournament().getId(), finished.getId());
+
+        for (Match ch : children) {
+            /* не дублируем, если уже добавлен */
+            boolean already =
+                    ch.getParticipants().stream()
+                            .anyMatch(p -> p.getId().equals(finished.getWinner()));
+
+            if (!already) ch.addParticipant(finished.getWinner());
+        }
     }
 
     /* ------------------------------------------------------------------

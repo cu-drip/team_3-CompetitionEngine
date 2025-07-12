@@ -5,6 +5,8 @@ import com.drip.competitionengine.model.*;
 import org.mapstruct.*;
 import java.util.List;
 
+import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
+
 @Mapper(componentModel = "spring")
 public interface MatchMapper {
 
@@ -24,7 +26,8 @@ public interface MatchMapper {
     Match toEntity(MatchDtoOut dto);
 
     /* ---------- partial patch ---------- */
-
+    @BeanMapping(nullValuePropertyMappingStrategy = IGNORE)
+    @Mapping(target = "participants", ignore = true)
     void patch(@MappingTarget Match target, MatchDtoOut dto);
 
     /* ---------- nested mapping: participants ---------- */
