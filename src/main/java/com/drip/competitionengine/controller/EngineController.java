@@ -1,9 +1,13 @@
 package com.drip.competitionengine.controller;
 
-import com.drip.competitionengine.dto.MatchDTO;
-import com.drip.competitionengine.dto.ScoreDto;
+import com.drip.competitionengine.bracket.Bracket;
+import com.drip.competitionengine.dto.BracketUploadRequest;
+import com.drip.competitionengine.dto.MatchDtoOut;
+import com.drip.competitionengine.dto.TourCreateRequest;
+import com.drip.competitionengine.model.Tournament;
 import com.drip.competitionengine.service.MatchService;
 import com.drip.competitionengine.service.TournamentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,87 +20,133 @@ import java.util.UUID;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class EngineController {
-    private final TournamentService tourService;
+
+    private final TournamentService tournamentService;
     private final MatchService matchService;
 
-    /* ---------- MATCH MANAGEMENT ---------- */
+    /* -------------------------------------------------
+     * 1.  TOURNAMENTS
+     * ------------------------------------------------- */
 
-    @GetMapping("/matches")
+    /** POST /tour – создание турнира */
+    @PostMapping("/tour")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<String> getAllMatches() {
-        return List.of("aboba", "aboba2");
+    public ResponseEntity<Tournament> createTour(
+            @Valid @RequestBody TourCreateRequest body) {
+
+        Tournament saved = tournamentService.create(body);
+        return ResponseEntity.status(201).body(saved);   // 201 Created
     }
 
-    @PostMapping("/matches")
-    public MatchDTO getMatchById(@RequestBody MatchDTO dto) {
-        return matchService.createMatch(dto);
+    /** GET /tour/{id} */
+    @GetMapping("/tour/{tourId}")
+    public Tournament getTour(@PathVariable UUID tourId) {
+        return tournamentService.getById(tourId);
+    }
+
+    /** PUT /tour/{id} – полная замена */
+    @PutMapping("/tour/{tourId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Tournament replaceTour(@PathVariable UUID tourId,
+                                  @Valid @RequestBody TourCreateRequest body) {
+        return tournamentService.replace(tourId, body);
+    }
+
+    /** DELETE /tour/{id} */
+    @DeleteMapping("/tour/{tourId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteTour(@PathVariable UUID tourId) {
+        tournamentService.delete(tourId);
+        return ResponseEntity.noContent().build();       // 204
+    }
+
+    /* -------------------------------------------------
+     * 2.  BRACKETS  (one per tournament)
+     * ------------------------------------------------- */
+
+    /** GET /bracket/{tourId} */
+    @GetMapping("/bracket/{tourId}")
+    public Bracket getBracket(@PathVariable UUID tourId) {
+        return tournamentService.getBracket(tourId);     // генерирует или читает из БД
+    }
+
+    /** PATCH /bracket/{tourId} – клиент полностью задаёт новую сетку */
+    @PatchMapping("/bracket/{tourId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Bracket replaceBracket(@PathVariable UUID tourId,
+                                  @RequestBody BracketUploadRequest body) {
+
+        return tournamentService.replaceBracket(tourId, body.getMatches());
     }
 
 
-    @GetMapping("/matches/{id}")
-    public MatchDTO getTournamentById(@PathVariable UUID id) {
-        return matchService.getMatchById(id);
+
+    /* -------------------------------------------------
+     * 3.  MATCHES   – nested under tournament
+     * ------------------------------------------------- */
+
+    /** GET /tour/{tourId}/matches – список матчей турнира */
+    @GetMapping("/tour/{tourId}/matches")
+    public List<MatchDtoOut> listMatches(@PathVariable UUID tourId) {
+        return matchService.listByTournament(tourId);
     }
 
-    @PutMapping("/matches/{id}")
-    public MatchDTO updateTournament(@PathVariable UUID id, @RequestBody MatchDTO dto) {
-        return matchService.updateMatch(id, dto);
+    /** POST /tour/{tourId}/matches – ручное добавление матча */
+    @PostMapping("/tour/{tourId}/matches")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MatchDtoOut> createMatch(@PathVariable UUID tourId,
+                                                   @RequestBody MatchDtoOut body) {
+        MatchDtoOut saved = matchService.createInTournament(tourId, body);
+        return ResponseEntity.status(201).body(saved);
     }
 
-    @PatchMapping("/matches/{id}")
-    public MatchDTO partialUpdateTournament(@PathVariable UUID id, @RequestBody MatchDTO dto) {
-        return matchService.partiallyUpdateMatch(id, dto);
+    /* ---- одиночный матч внутри турнира ---- */
+
+    /** GET /tour/{tourId}/matches/{matchId} */
+    @GetMapping("/tour/{tourId}/matches/{matchId}")
+    public MatchDtoOut getMatchInTour(@PathVariable UUID tourId,
+                                      @PathVariable UUID matchId) {
+        return matchService.getInTournament(tourId, matchId);
     }
 
-    @DeleteMapping("/matches/{id}")
-    public ResponseEntity<Void> deleteTournament(@PathVariable UUID id) {
-        matchService.deleteMatch(id);
+    /** PUT /tour/{tourId}/matches/{matchId} – полная замена */
+    @PutMapping("/tour/{tourId}/matches/{matchId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public MatchDtoOut replaceMatch(@PathVariable UUID tourId,
+                                    @PathVariable UUID matchId,
+                                    @RequestBody MatchDtoOut body) {
+        return matchService.replace(tourId, matchId, body);
+    }
+
+    /** PATCH /tour/{tourId}/matches/{matchId} – частичное обновление */
+    @PatchMapping("/tour/{tourId}/matches/{matchId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public MatchDtoOut patchMatch(@PathVariable UUID tourId,
+                                  @PathVariable UUID matchId,
+                                  @RequestBody MatchDtoOut body) {
+        return matchService.patch(tourId, matchId, body);
+    }
+
+    /** DELETE /tour/{tourId}/matches/{matchId} */
+    @DeleteMapping("/tour/{tourId}/matches/{matchId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteMatch(@PathVariable UUID tourId,
+                                            @PathVariable UUID matchId) {
+        matchService.delete(tourId, matchId);
         return ResponseEntity.noContent().build();
     }
 
-    /* ---------- TOURNAMENT ---------- */
+    /* -------------------------------------------------
+     * 4.  GLOBAL read-only access to a match
+     * ------------------------------------------------- */
 
-    @PostMapping("/distribute/{tourId}")
-    public ResponseEntity<Void> distribute(@PathVariable UUID tourId) {
-        tourService.distribute(tourId);
-        return ResponseEntity.noContent().build();           // 204
-    }
-
-    /* ---------- MATCH LIFECYCLE ---------- */
-
-    @PostMapping("/start_match/{matchId}")
-    public ResponseEntity<String> startMatch(@PathVariable UUID matchId) {
-        matchService.startMatch(matchId);
-        return ResponseEntity.ok("Started"); // 200
-    }
-
-    @GetMapping("/get_match_status/{matchId}")
-    public MatchDTO getStatus(@PathVariable UUID matchId) {        // 200
-        return new MatchDTO();
-    }
-
-    /* ---------- SCORE OPS ---------- */
-
-    @PostMapping("/add_points/{matchId}/{participantId}/{n}")
-    public ResponseEntity<ScoreDto> addPts(@PathVariable UUID matchId,
-                                           @PathVariable UUID participantId,
-                                           @PathVariable int n) {
-        int pts = matchService.addPoints(matchId, participantId, n);
-        return ResponseEntity.ok(new ScoreDto(matchId, participantId, pts)); // 200
-    }
-
-    @PostMapping("/remove_points/{matchId}/{participantId}/{n}")
-    public ResponseEntity<ScoreDto> remPts(@PathVariable UUID matchId,
-                                           @PathVariable UUID participantId,
-                                           @PathVariable int n) {
-        int pts = matchService.removePoints(matchId, participantId, n);
-        return ResponseEntity.ok(new ScoreDto(matchId, participantId, pts)); // 200
-    }
-
-    @PostMapping("/set_winner/{matchId}/{participantId}")
-    public ResponseEntity<Void> setWinner(@PathVariable UUID matchId,
-                                          @PathVariable UUID participantId) {
-        matchService.setWinner(matchId, participantId);
-        return ResponseEntity.noContent().build();           // 204
+    /** GET /matches/{matchId} – каноническая ссылка */
+    @GetMapping("/matches/{matchId}")
+    public MatchDtoOut getMatchGlobal(@PathVariable UUID matchId) {
+        MatchDtoOut dto = matchService.getGlobal(matchId);
+        // добавляем canonical URL, как требует контракт
+        dto.setCanonical("/api/v1/tour/" + dto.getTournamentId()
+                + "/matches/" + dto.getMatchId());
+        return dto;
     }
 }

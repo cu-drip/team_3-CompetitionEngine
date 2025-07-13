@@ -1,40 +1,72 @@
 package com.drip.competitionengine.model;
 
+import com.drip.competitionengine.bracket.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.Instant;
 import java.util.*;
 
-@Entity @Table(name="tournaments")
-@Data @NoArgsConstructor @AllArgsConstructor
-public class Tournament {
-  @Column(name = "id")
-  @Id UUID id;
-  @Column(name = "title")
-  String title;
-  @Column(name = "description")
-  String description;
-  @Column(name = "sport")
-  @Enumerated(EnumType.STRING) Sport sport;
-  @Column(name = "type_tournament")
-  @Enumerated(EnumType.STRING) TournamentType typeTournament;
-  @Column(name = "type_group")
-  @Enumerated(EnumType.STRING) GroupType typeGroup;
-  @Column(name = "matches_number")
-  Integer matchesNumber;
-  @Column(name = "start_time")
-  Instant startTime;
-  @Column(name = "created_at")
-  Instant createdAt;
-  @Column(name = "entry_cost")
-  Double entryCost;
-  @Column(name = "max_participants")
-  Integer maxParticipants;
-  @Column(name = "registration_deadline")
-  Instant registrationDeadline;
-  @Column(name = "place")
-  String place;
-  @Column(name = "organizer_id")
-  UUID organizerId;
-  boolean distributed = false; // helper flag
+@Entity
+@Table(name = "tournaments")
+@Getter @Setter @NoArgsConstructor
+public class Tournament implements BracketAware {
+
+    /* ---------- PK и базовые поля ---------- */
+
+    @Id
+    private UUID id = UUID.randomUUID();
+
+    @Column(nullable = false)
+    private String title;
+
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    private Sport sport;
+
+    @Enumerated(EnumType.STRING)
+    private TournamentType typeTournament;
+
+    @Enumerated(EnumType.STRING)
+    private GroupType typeGroup;
+
+    @Column(name = "start_time", nullable = false)
+    private Instant startTime;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "max_participants")
+    private Integer maxParticipants;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tournament_participants",
+            joinColumns = @JoinColumn(name = "tournament_id"))
+    @Column(name = "participant_id")
+    private List<UUID> participants = new ArrayList<>();
+
+    private String place;
+
+    @Column(name = "organizer_id", nullable = false)
+    private UUID organizerId;
+
+    /* ---------- Связи ---------- */
+
+    // матчи будут храниться отдельно; здесь удобно иметь упорядоченный view
+    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("position")
+    @JsonIgnore
+    private List<Match> matches = new ArrayList<>();
+
+    /* ---------- Ленивая генерация сетки ---------- */
+
+    @Override
+    public Bracket getBracket() {
+        // делегируем нужной стратегии
+        return BracketStrategies.forType(typeGroup).generate(this);
+    }
 }
