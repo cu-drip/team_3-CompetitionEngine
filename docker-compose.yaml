@@ -22,9 +22,9 @@ services:
     networks:
       - microservices-net   # ← добавили
 
-  competition-engine:
+  competitionengine:
     build: .
-    container_name: competition-engine
+    container_name: competitionengine
     restart: on-failure
     depends_on:
       enginedb:
@@ -34,9 +34,9 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       JWT_SECRET_PATH: /run/secrets/jwt_secret
-      STATISTIC_URL: http://app:8080
+      STATISTIC_URL: http://statisticservice:8080
     ports:
-      - "8080:8080"
+      - "8088:8080"
     secrets:
       - jwt_secret
     networks:
