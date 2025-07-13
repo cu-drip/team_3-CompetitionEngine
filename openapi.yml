@@ -32,13 +32,15 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Tour' }
+            schema:
+              $ref: '#/components/schemas/Tour'
       responses:
         '201':
           description: Tournament created
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Tour' }
+              schema:
+                $ref: '#/components/schemas/Tour'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -53,7 +55,8 @@ paths:
           description: Tournament data
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Tour' }
+              schema:
+                $ref: '#/components/schemas/Tour'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -64,13 +67,15 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Tour' }
+            schema:
+              $ref: '#/components/schemas/Tour'
       responses:
         '200':
           description: Tournament updated
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Tour' }
+              schema:
+                $ref: '#/components/schemas/Tour'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -84,7 +89,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   ############################################################
-  #  BRACKETS (one-per-tournament)
+  #  BRACKETS
   ############################################################
   /bracket/{tourId}:
     parameters:
@@ -97,30 +102,33 @@ paths:
           description: Bracket data
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Bracket' }
+              schema:
+                $ref: '#/components/schemas/Bracket'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     patch:
-      summary: Update bracket for tournament
+      summary: Replace entire bracket
       security: [ { bearerAuth: [] } ]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Bracket' }
+            schema:
+              $ref: '#/components/schemas/Bracket'
       responses:
         '200':
           description: Bracket updated
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Bracket' }
+              schema:
+                $ref: '#/components/schemas/Bracket'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   ############################################################
-  #  MATCHES  —  nested under tournament for mutations
+  #  MATCHES — nested under tournament
   ############################################################
   /tour/{tourId}/matches:
     parameters:
@@ -135,7 +143,8 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/Match' }
+                items:
+                  $ref: '#/components/schemas/Match'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -146,13 +155,15 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Match' }
+            schema:
+              $ref: '#/components/schemas/Match'
       responses:
         '201':
           description: Match created
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Match' }
+              schema:
+                $ref: '#/components/schemas/Match'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -169,7 +180,8 @@ paths:
           description: Match data
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Match' }
+              schema:
+                $ref: '#/components/schemas/Match'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -180,13 +192,15 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Match' }
+            schema:
+              $ref: '#/components/schemas/Match'
       responses:
         '200':
           description: Match replaced
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Match' }
+              schema:
+                $ref: '#/components/schemas/Match'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -197,13 +211,15 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Match' }
+            schema:
+              $ref: '#/components/schemas/Match'
       responses:
         '200':
           description: Match updated
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Match' }
+              schema:
+                $ref: '#/components/schemas/Match'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -217,17 +233,17 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   ############################################################
-  #  GLOBAL READ-ONLY ACCESS TO A MATCH BY ID
+  #  GLOBAL READ-ONLY ACCESS TO A MATCH
   ############################################################
   /matches/{matchId}:
     parameters:
       - $ref: '#/components/parameters/MatchId'
     get:
-      summary: Get match by ID (read-only, no tournament context required)
+      summary: Get match by ID (no tournament context)
       security: [ { bearerAuth: [] } ]
       responses:
         '200':
-          description: Match data (includes canonical URL)
+          description: Match data (with canonical URL)
           content:
             application/json:
               schema:
@@ -244,16 +260,12 @@ paths:
 
 components:
 
-  #######  Security schemes  #######
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: >
-        Use a Bearer token containing a valid JWT.  
 
-  #######  Reusable parameters  #######
   parameters:
     TourId:
       name: tourId
@@ -262,7 +274,6 @@ components:
       schema:
         type: string
         format: uuid
-      description: UUID of the tournament
     MatchId:
       name: matchId
       in: path
@@ -270,186 +281,175 @@ components:
       schema:
         type: string
         format: uuid
-      description: UUID of the match
 
-  #######  Standard responses  #######
   responses:
     Unauthorized:
       description: Invalid or missing JWT bearer token
     Forbidden:
-      description: Authenticated but lacking `ROLE_ADMIN` authority
+      description: Authenticated but lacking `ROLE_ADMIN`
     NotFound:
       description: Resource not found
 
-  #######  Schemas  #######
   schemas:
 
     Tour:
       type: object
-      description: Схема объекта «Турнир»
       required:
-        [ startTime, sport, id, typeTournament, typeGroup,
-          matchesNumber, createdAt, maxParticipants,
-          place, organizerId, participants ]
+        - id
+        - title
+        - description
+        - sport
+        - typeTournament
+        - typeGroup
+        - startTime
+        - maxParticipants
+        - place
+        - organizerId
+        - participants
       properties:
         id:
           type: string
           format: uuid
-          description: Уникальный идентификатор турнира
+        title:
+          type: string
+        description:
+          type: string
+        sport:
+          type: string
+          enum:
+            - football
+            - basketball
+            - tennis
+            - boxing
+            - chess
+            - jiujitsu
+        typeTournament:
+          type: string
+          enum:
+            - solo
+            - team
+        typeGroup:
+          type: string
+          enum:
+            - olympic
+            - swiss
+            - round_robin
         startTime:
           type: string
           format: date-time
-          description: Время начала турнира (ISO 8601)
         createdAt:
           type: string
           format: date-time
-          description: Дата и время создания записи
-        sport:
-          type: string
-          enum: [football, basketball, tennis, boxing, chess, jiujitsu]
-          description: Вид спорта
-        typeTournament:
-          type: string
-          enum: [solo, team]
-          description: Формат турнира
-        typeGroup:
-          type: string
-          enum: [olympic, swiss, round_robin]
-          description: Тип распределения
-        matchesNumber:
-          type: integer
-          minimum: 1
-          description: Общее число матчей
         maxParticipants:
           type: integer
           minimum: 1
-          description: Максимальное число участников
         place:
           type: string
-          description: Место проведения
         organizerId:
           type: string
           format: uuid
-          description: Идентификатор организатора
         participants:
           type: array
           items:
             type: string
             format: uuid
-          description: Список идентификаторов участников
+
+    Bracket:
+      type: object
+      required:
+        - matches
+      properties:
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/Match'
 
     Match:
       type: object
-      description: Схема объекта «Матч»
       required:
-        [ id, plannedStartTime, plannedEndTime,
-          participants, winner, status, parentMatches ]
+        - id
+        - plannedStartTime
+        - plannedEndTime
+        - participants
+        - status
+        - parentMatches
       properties:
         id:
           type: string
           format: uuid
-          description: Уникальный идентификатор матча
+        tournamentId:
+          type: string
+          format: uuid
         plannedStartTime:
           type: string
           format: date-time
-          description: Запланированное время начала
         plannedEndTime:
           type: string
           format: date-time
-          description: Запланированное время окончания
         startedAt:
           type: string
           format: date-time
           nullable: true
-          description: Фактическое время начала
         finishedAt:
           type: string
           format: date-time
           nullable: true
-          description: Фактическое время окончания
-        participants:
-          type: array
-          description: Статистика каждого участника
-          items:
-            $ref: '#/components/schemas/MatchParticipant'
+        status:
+          type: string
+          enum:
+            - prepared
+            - ongoing
+            - finished
         winner:
           type: string
           format: uuid
-          description: Идентификатор победителя
-        status:
-          type: string
-          enum: [prepared, ongoing, finished]
-          description: Текущий статус матча
+          nullable: true
         parentMatches:
           type: array
           items:
             type: string
             format: uuid
-          description: Ссылки на родительские матчи
-
-    Bracket:
-      type: object
-      description: Турнирная сетка (bracket)
-      required: [typeTournament, typeGroup, matches]
-      properties:
-        typeTournament:
-          type: string
-          enum: [INDIVIDUAL, TEAM]
-          description: Формат турнира
-        typeGroup:
-          type: string
-          enum: [OLYMPIC, GROUP_STAGE, KNOCKOUT]
-          description: Тип сетки
-        matches:
+        participants:
           type: array
           items:
-            $ref: '#/components/schemas/Match'
-          description: Список матчей в сетке
+            $ref: '#/components/schemas/MatchParticipant'
 
     MatchParticipant:
       type: object
-      description: Статистика одного участника в матче
-      required: [id]
+      required:
+        - id
       properties:
         id:
           type: string
           format: uuid
-          description: Идентификатор участника
         score:
           type: integer
           minimum: 0
           nullable: true
-          description: Очки/голы
         redCards:
           type: integer
           minimum: 0
           nullable: true
-          description: Количество красных карточек
         yellowCards:
           type: integer
           minimum: 0
           nullable: true
-          description: Количество жёлтых карточек
         assists:
           type: integer
           minimum: 0
           nullable: true
-          description: Передачи
         fouls:
           type: integer
           minimum: 0
           nullable: true
-          description: Фолы
         sets:
           type: integer
           minimum: 0
           nullable: true
-          description: Выигранные сеты
         knockdowns:
           type: integer
           minimum: 0
           nullable: true
-          description: Нокдауны
 
     ReasonError:
       type: object
