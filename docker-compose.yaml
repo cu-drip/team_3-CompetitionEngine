@@ -22,9 +22,9 @@ services:
     networks:
       - microservices-net   # ← добавили
 
-  competitionengine:
+  engineservice:
     build: .
-    container_name: competitionengine
+    container_name: engineservice
     restart: on-failure
     depends_on:
       enginedb:
