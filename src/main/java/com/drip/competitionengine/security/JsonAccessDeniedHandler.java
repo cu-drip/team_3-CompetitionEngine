@@ -22,6 +22,6 @@ public class JsonAccessDeniedHandler implements AccessDeniedHandler {
         res.getWriter().print("""
             {"error":"Forbidden - need admin rights"}
             """);
-        res.flushBuffer();
+        res.flushBuffer();    // ← фиксируем ответ, чтобы его больше никто не трогал
     }
 }

@@ -5,4 +5,4 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 
 @Repository
-public interface TournamentRepository extends JpaRepository<Tournament,UUID>{}
+public interface UserRepository extends JpaRepository<User,UUID>{}

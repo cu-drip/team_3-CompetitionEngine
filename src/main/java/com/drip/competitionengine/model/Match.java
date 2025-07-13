@@ -1,81 +1,90 @@
 package com.drip.competitionengine.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Entity
-@Table(name = "matches",
-        indexes = @Index(name = "ix_match_tour_pos",
-                columnList = "tournament_id, position"))
-@Getter @Setter @NoArgsConstructor
+@Table(name = "matches")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Match {
+  @Id
+  @Column(name = "match_id")
+  UUID id;
+  @Column(name = "tour_id")
+  UUID tourId;
+  @Column(name = "started_at")
+  LocalDateTime startedAt;
+  @CreationTimestamp
+  @Column(name = "created_at")
+  LocalDateTime createdAt;
+  @Column(name = "position")
+  Integer position;
+  @Column(name = "partition1_id")
+  UUID partition1Id;
+  @Column(name = "partition2_id")
+  UUID partition2Id;
+  @Column(name = "partition1_points")
+  Integer partition1Points;
+  @Column(name = "partition2_points")
+  Integer partition2Points;
+  @Column(name = "winner_id")
+  UUID winnerId;
 
-    @Id
-    private UUID id;
-
-    /* ---------- служебные поля ---------- */
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tournament_id", nullable = false)
-    @JsonIgnore
-    private Tournament tournament;
-
-    @Column(name = "position")
-    @JsonIgnore
-    private Integer position;
-
-    /* ---------- данные из OpenAPI ---------- */
-
-    private Instant plannedStartTime;
-    private Instant plannedEndTime;
-    private Instant startedAt;
-    private Instant finishedAt;
-
-    @Enumerated(EnumType.STRING)
-    private MatchStatus status = MatchStatus.PREPARED;
-
-    private UUID winner;
-
-    /* parentMatches */
-    @ElementCollection
-    @CollectionTable(name = "match_parents",
-            joinColumns = @JoinColumn(name = "match_id"))
-    @Column(name = "parent_id")
-    private List<UUID> parentMatches = new ArrayList<>();
-
-    /* participants — теперь Embeddable */
-    @ElementCollection
-    @CollectionTable(name = "match_participants",
-            joinColumns = @JoinColumn(name = "match_id"))
-    private List<MatchParticipant> participants = new ArrayList<>();
-
-    public void addParticipant(UUID pid) {
-        participants.add(new MatchParticipant(pid));
+  /**
+   * Устанавливает очки для указанной партии и возвращает новое значение.
+   *
+   * @param partitionId идентификатор partition1 или partition2
+   * @param points      сколько очков назначить
+   * @return новое значение очков для этой партии
+   * @throws IllegalArgumentException если partitionId не совпадает ни с одной из партий
+   */
+  public int setPartitionPointsById(UUID partitionId, int points) {
+    if (partitionId == null) {
+      throw new IllegalArgumentException("partitionId must not be null");
     }
 
-    /** Любое изменение полей → матч считается идущим. */
-    public void touchOngoing() {
-        if (status == MatchStatus.PREPARED) {
-            status = MatchStatus.ONGOING;
-            if (startedAt == null) startedAt = Instant.now();
-        }
+    if (partitionId.equals(partition1Id)) {
+      this.partition1Points = points;
+      return this.partition1Points;
+    } else if (partitionId.equals(partition2Id)) {
+      this.partition2Points = points;
+      return this.partition2Points;
+    } else {
+      throw new IllegalArgumentException(
+              "partitionId " + partitionId + " not found in this match");
+    }
+  }
+
+  /**
+   * Возвращает текущее количество очков для указанной партии.
+   *
+   * @param partitionId идентификатор partition1 или partition2
+   * @return очки соответствующей партии (может быть null, если ещё не выставлены)
+   * @throws IllegalArgumentException если partitionId не совпадает ни с одной из партий
+   */
+  public Integer getPartitionPointsById(UUID partitionId) {
+    if (partitionId == null) {
+      throw new IllegalArgumentException("partitionId must not be null");
     }
 
-    /** Фиксация победителя + финиша */
-    public void finish(UUID winnerId) {
-        this.winner     = winnerId;
-        this.status     = MatchStatus.FINISHED;
-        this.finishedAt = Instant.now();
-        if (startedAt == null) startedAt = finishedAt; // страховка
-
+    if (partitionId.equals(partition1Id)) {
+      return partition1Points;
+    } else if (partitionId.equals(partition2Id)) {
+      return partition2Points;
+    } else {
+      throw new IllegalArgumentException(
+              "partitionId " + partitionId + " not found in this match");
     }
+  }
+
+  public boolean isActive() {
+    return startedAt != null && winnerId == null;
+  }
 }
-

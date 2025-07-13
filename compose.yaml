@@ -15,12 +15,12 @@ services:
       - "5397:5432"
     volumes:
       - engine_data:/var/lib/postgresql/data
+    networks:
+      - sports-network
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d engine" ]
       interval: 1s
       retries: 5
-    networks:
-      - microservices-net   # ← добавили
 
   competition-engine:
     build: .
@@ -34,17 +34,16 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       JWT_SECRET_PATH: /run/secrets/jwt_secret
-      STATISTIC_URL: http://app:8080
     ports:
       - "8080:8080"
+    networks:
+      - sports-network
     secrets:
       - jwt_secret
-    networks:
-      - microservices-net   # ← добавили
 
 volumes:
   engine_data:
 
 networks:
-  microservices-net:              # ← перезаписываем standard default
-    external: true
+  sports-network:
+    driver: bridge
