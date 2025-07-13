@@ -75,6 +75,7 @@ public class Match {
         this.status     = MatchStatus.FINISHED;
         this.finishedAt = Instant.now();
         if (startedAt == null) startedAt = finishedAt; // страховка
+
     }
 }
 
