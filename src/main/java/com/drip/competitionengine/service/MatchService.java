@@ -155,11 +155,18 @@ public class MatchService {
             entity.finish(newWinner);               // FINISHED + finishedAt
             propagateWinner(entity);
 
-            /* ---- PUSH to statistic-service -------------------- */
-            StatsPayload payload = statsMapper.toPayload(
-                    entity.getTournament(), List.of(entity));
-            statsClient.send(payload);
-
+            // ─── ONLY IF THIS IS THE FINAL MATCH ───
+            List<Match> children = matchRepo.findChildren(
+                    entity.getTournament().getId(),
+                    entity.getId());
+            if (children.isEmpty()) {
+                // PUSH to statistic-service
+                StatsPayload payload = statsMapper.toPayload(
+                        entity.getTournament(),
+                        List.of(entity)          // only this final match
+                );
+                statsClient.send(payload);
+            }
             newStatus = MatchStatus.FINISHED;
         }
 
