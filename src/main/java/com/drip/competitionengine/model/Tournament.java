@@ -1,4 +1,4 @@
-package com.drip.competitionengine.model;
+﻿package com.drip.competitionengine.model;
 
 import com.drip.competitionengine.bracket.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
